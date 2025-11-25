@@ -9,27 +9,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Git clone repository
-      uses: actions/checkout@v3
-
-    - name: Copy files to AWS server
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.AWS_HOST }}
-        username: ubuntu
-        key: ${{ secrets.AWS_SSH_KEY }}
-        source: "."
-        target: "~/my-api"
-
-    - name: Run docker build & restart
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.AWS_HOST }}
-        username: ubuntu
-        key: ${{ secrets.AWS_SSH_KEY }}
-        script: |
-          cd my-api
+    - name: Deploy via SSH
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SSH_KEY }} ubuntu@${{ secrets.AWS_HOST }} << 'EOF'
+          cd ~/my-api
+          git reset --hard HEAD
+          git pull origin main
+          
           sudo docker build -t myapi .
           sudo docker stop myapi || true
           sudo docker rm myapi || true
           sudo docker run -d -p 80:5000 --name myapi myapi
+        EOF
+      shell: bash
