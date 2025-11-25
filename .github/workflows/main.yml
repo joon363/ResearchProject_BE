@@ -1,0 +1,35 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Git clone repository
+      uses: actions/checkout@v3
+
+    - name: Copy files to AWS server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.AWS_HOST }}
+        username: ubuntu
+        key: ${{ secrets.AWS_SSH_KEY }}
+        source: "."
+        target: "~/my-api"
+
+    - name: Run docker build & restart
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.AWS_HOST }}
+        username: ubuntu
+        key: ${{ secrets.AWS_SSH_KEY }}
+        script: |
+          cd my-api
+          sudo docker build -t myapi .
+          sudo docker stop myapi || true
+          sudo docker rm myapi || true
+          sudo docker run -d -p 80:5000 --name myapi myapi
