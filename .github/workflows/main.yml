@@ -11,7 +11,12 @@ jobs:
     steps:
     - name: Deploy via SSH
       run: |
-        ssh -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SSH_KEY }} ubuntu@${{ secrets.AWS_HOST }} << 'EOF'
+        # SSH 키를 임시 파일로 저장
+        echo "${{ secrets.AWS_SSH_KEY }}" > my_ssh_key
+        chmod 600 my_ssh_key
+
+        # SSH 접속 후 배포
+        ssh -o StrictHostKeyChecking=no -i my_ssh_key ubuntu@${{ secrets.AWS_HOST }} << 'EOF'
           cd ~/my-api
           git reset --hard HEAD
           git pull origin main
